@@ -3,8 +3,16 @@
   "compilerOptions": {
     "noEmit": false,
     "outDir": "dist",
-    "rootDir": "."
+    "rootDir": ".",
+    "declaration": true
   },
-  "include": ["packages", "apps/api"],
-  "exclude": ["packages/guardian-core/examples", "packages/devin/demo-loop.ts", "packages/jev/explain.ts"]
+  "include": [
+    "packages",
+    "apps/api"
+  ],
+  "exclude": [
+    "packages/guardian-core/examples",
+    "packages/devin/demo-loop.ts",
+    "packages/jev/explain.ts"
+  ]
 }
