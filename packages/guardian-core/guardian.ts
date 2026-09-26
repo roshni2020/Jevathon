@@ -191,8 +191,14 @@ function summarize(a: ProposedAction): string {
 }
 
 function explain(decision: Decision, reasons: ReasonCode[], a: ProposedAction): string {
-  if (reasons.includes("OTP_REQUEST") || reasons.includes("CREDENTIAL_EXPOSURE"))
-    return "A stranger asked for a login code. Guardian stopped it before it was sent.";
+  if (reasons.includes("OTP_REQUEST"))
+    return "A stranger asked for a one-time login code. Guardian stopped it before it was sent.";
+  if (reasons.includes("PASSWORD_REQUEST"))
+    return "This would have handed over a password. Guardian stopped it before it was sent.";
+  if (reasons.includes("PAYMENT_RISK"))
+    return "This would have exposed card details. Guardian stopped it before it was sent.";
+  if (reasons.includes("CREDENTIAL_EXPOSURE"))
+    return "This would have disclosed a login secret. Guardian stopped it before it was sent.";
   if (reasons.includes("PROMPT_INJECTION"))
     return "Text on the page tried to give the agent new orders. Guardian ignored them.";
   if (reasons.includes("SOCIAL_ENGINEERING"))

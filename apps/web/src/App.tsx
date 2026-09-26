@@ -2,15 +2,17 @@ import { useCallback, useEffect, useState } from "react";
 import About from "./About";
 import Connections from "./Connections";
 import Login from "./Login";
+import TryIt from "./TryIt";
 import Playground from "./Playground";
 import { api, call } from "./api";
 import type { Rule, State, Verdict } from "./types";
 import { Button, Card, Chip, DEC, Meter, Reason, Stat, time } from "./ui";
 
-type Tab = "playground" | "dashboard" | "connections" | "policies" | "incident" | "about";
+type Tab = "playground" | "tryit" | "dashboard" | "connections" | "policies" | "incident" | "about";
 
 const TABS: { id: Tab; label: string }[] = [
   { id: "playground", label: "Agent Playground" },
+  { id: "tryit", label: "Check an Action" },
   { id: "dashboard", label: "Dashboard" },
   { id: "connections", label: "Connections" },
   { id: "policies", label: "Safety Policies" },
@@ -103,6 +105,7 @@ export default function App() {
 
       <div key={tab} className="fadeup">
       {tab === "playground" && <Playground state={state} reload={reload} />}
+      {tab === "tryit" && <TryIt state={state} />}
       {tab === "dashboard" && <Dashboard state={state} />}
       {tab === "connections" && <Connections state={state} reload={reload} />}
       {tab === "policies" && <Policies state={state} />}
@@ -127,6 +130,26 @@ export default function App() {
 
 function Dashboard({ state }: { state: State }) {
   const pending = state.approvals.filter((a) => a.status === "PENDING");
+  const [q, setQ] = useState("");
+  const [only, setOnly] = useState<"all" | "ALLOW" | "ASK_PARENT" | "BLOCK">("all");
+
+  const needle = q.trim().toLowerCase();
+  const shown = state.verdicts.filter((v) => {
+    const matchesDecision =
+      only === "all" ||
+      (only === "BLOCK" ? v.decision === "BLOCK" || v.decision === "ESCALATE" : v.decision === only);
+    if (!matchesDecision) return false;
+    if (!needle) return true;
+    // Search everything a parent might remember: the site, the wording, the reason codes.
+    return [
+      v.explanation, v.action.target, v.action.action_type, v.action.goal,
+      v.action.content ?? "", v.action.source_message ?? "",
+      ...(v.action.data_types ?? []), ...v.reason_codes,
+    ]
+      .join(" ")
+      .toLowerCase()
+      .includes(needle);
+  });
 
   async function resolve(id: string, verb: "approve" | "deny", remember = false) {
     await call(`/api/approvals/${id}/${verb}`, { method: "POST", body: JSON.stringify({ remember }) });
@@ -172,16 +195,45 @@ function Dashboard({ state }: { state: State }) {
       )}
 
       <Card>
-        <div className="border-b border-slate-100 px-5 py-3.5 text-[13px] font-semibold text-slate-900">
-          Activity timeline
+        <div className="flex flex-wrap items-center gap-3 border-b border-slate-100 px-5 py-3">
+          <div className="text-[13px] font-semibold text-slate-900">Activity timeline</div>
+          <div className="ml-auto flex flex-wrap items-center gap-2">
+            <input
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder="Search actions, sites, reasons…"
+              className="w-56 rounded-xl border-0 bg-slate-50 px-3 py-1.5 text-[13px] text-slate-900 ring-1 ring-slate-200 outline-none focus:ring-2 focus:ring-slate-900"
+            />
+            <div className="flex gap-0.5 rounded-lg bg-slate-100 p-0.5">
+              {(["all", "ALLOW", "ASK_PARENT", "BLOCK"] as const).map((k) => (
+                <button
+                  key={k}
+                  onClick={() => setOnly(k)}
+                  className={`rounded-md px-2 py-1 text-[11px] font-bold uppercase tracking-wide transition ${
+                    only === k ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"
+                  }`}
+                >
+                  {k === "all" ? "All" : k.replace("_", " ")}
+                </button>
+              ))}
+            </div>
+            <span className="text-[12px] tabular-nums text-slate-400">
+              {shown.length}/{state.verdicts.length}
+            </span>
+          </div>
         </div>
         <ul className="divide-y divide-slate-50">
           {state.verdicts.length === 0 && (
             <li className="px-5 py-10 text-center text-sm text-slate-400">
-              Nothing yet — run a scenario in Agent Playground.
+              Nothing yet — run a scenario, or try one in Check an Action.
             </li>
           )}
-          {state.verdicts.map((v) => (
+          {state.verdicts.length > 0 && shown.length === 0 && (
+            <li className="px-5 py-10 text-center text-sm text-slate-400">
+              No actions match “{q}”.
+            </li>
+          )}
+          {shown.map((v) => (
             <li key={v.request_id} className="flex items-start gap-4 px-5 py-3.5">
               <span className="w-16 shrink-0 pt-0.5 text-[12px] tabular-nums text-slate-400">{time(v.timestamp)}</span>
               <span className="pt-0.5 text-[15px] leading-none">{DEC[v.decision].icon}</span>
