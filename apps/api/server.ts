@@ -1,4 +1,6 @@
 import "dotenv/config";
+import { existsSync } from "node:fs";
+import path from "node:path";
 import express, { type NextFunction, type Request, type Response } from "express";
 import { makeExecutor, toBrowserAction } from "../../packages/browser/index.js";
 import {
@@ -257,6 +259,19 @@ app.post("/api/reset", requireParent, (_req, res) => {
   store.reset();
   res.json({ ok: true });
 });
+
+/**
+ * In a container there is no Vite dev server, so the API serves the built frontend from
+ * the same origin. Mounted after the routes so /api/* always wins, and skipped entirely
+ * in development where Vite owns :5173.
+ */
+const WEB_DIST = path.resolve(process.cwd(), "apps/web/dist");
+if (existsSync(WEB_DIST)) {
+  app.use(express.static(WEB_DIST));
+  // Single-page app: anything that is not an API route falls back to index.html.
+  app.get(/^\/(?!api\/).*/, (_req, res) => res.sendFile(path.join(WEB_DIST, "index.html")));
+  console.log("serving built frontend from apps/web/dist");
+}
 
 const port = Number(process.env.PORT ?? 8787);
 app.listen(port, () => {

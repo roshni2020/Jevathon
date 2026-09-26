@@ -1,0 +1,14 @@
+services:
+  guardian:
+    build: .
+    ports:
+      - "8787:8787"
+    environment:
+      # Read from your .env; never baked into the image.
+      TYPESAFE_API_KEY: ${TYPESAFE_API_KEY:?set TYPESAFE_API_KEY in .env}
+      BROWSERBASE_API_KEY: ${BROWSERBASE_API_KEY:-}
+      DEVIN_API_KEY: ${DEVIN_API_KEY:-}
+      # The dashboard is served from this same origin in a container.
+      CORS_ORIGIN: http://localhost:8787
+      PORT: 8787
+    restart: unless-stopped

@@ -75,6 +75,27 @@ npm run mcp                           # guardian-mcp on stdio
 npx tsx packages/devin/demo-loop.ts   # Devin → CodeRabbit → Jev deploy gate
 ```
 
+### Docker
+
+One image: the API serves the built dashboard from the same origin, so there is a single
+port and no separate web container.
+
+```bash
+docker compose up --build      # http://localhost:8787
+```
+
+Keys come from your `.env` at run time and are never baked into the image. The container
+runs as the `node` user, and `/api/health` backs the healthcheck without spending a Jev
+call. The MCP server is a second entrypoint in the same image:
+
+```bash
+docker compose exec guardian npx tsx packages/guardian-mcp/server.ts
+```
+
+Without Docker, the same single-origin mode works locally — `npm run build --prefix apps/web`
+then `npm run api`, and the dashboard is on <http://localhost:8787>. `npm run dev` keeps
+Vite on :5173 for hot reload while developing.
+
 ### Environment
 
 | Variable | Needed for | Without it |
@@ -82,6 +103,7 @@ npx tsx packages/devin/demo-loop.ts   # Devin → CodeRabbit → Jev deploy gate
 | `TYPESAFE_API_KEY` | Jev, both decision paths | Falls back to a regex heuristic, labelled `fallback` in the UI |
 | `BROWSERBASE_API_KEY` | Real browser sessions (project id is discovered from the key) | Uses `MockBrowserExecutor` |
 | `DEVIN_API_KEY` | Live Devin sessions | `DevinAdapter` returns a recorded result |
+| `CORS_ORIGIN` | Locking the dashboard origin | Defaults to `http://localhost:5173` |
 
 ## Connecting a real assistant
 
@@ -187,6 +209,11 @@ Built for the Jevathon (TypeSafe AI × AI Collective), 26 September 2026.
 Deliberately out of scope: signup and account recovery (one seeded parent), real parental
 identity verification, payment processing, and durable storage — state is in process
 memory, and `store.ts` says where SQLite would go. Sign-in itself is real.
+
+Nothing is written to disk: no child's messages, phone numbers or codes are persisted, so
+there is no store to breach — but equally no durability, and a restart clears the timeline
+and signs everyone out. Production needs Postgres with encryption at rest, which is a
+schema change behind the `store.ts` functions rather than a redesign.
 
 Clearly mocked, and labelled as such in the UI and in code: `MockBrowserExecutor` (unless
 Browserbase credentials are present), `DevinAdapter.run()` (unless `DEVIN_API_KEY` is
