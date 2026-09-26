@@ -1,0 +1,35 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+}
+
+html { -webkit-font-smoothing: antialiased; }
+body { background: #f7f8fb; color: #16181d; }
+
+@keyframes slam {
+  0%   { transform: scale(.7); opacity: 0; }
+  55%  { transform: scale(1.06); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+@keyframes slidein {
+  from { transform: translateY(8px); opacity: 0; }
+  to   { transform: translateY(0); opacity: 1; }
+}
+@keyframes pulsering {
+  0%   { box-shadow: 0 0 0 0 rgba(239,68,68,.45); }
+  100% { box-shadow: 0 0 0 26px rgba(239,68,68,0); }
+}
+.slam { animation: slam .5s cubic-bezier(.2,1.5,.4,1) both; }
+.slidein { animation: slidein .28s ease-out both; }
+.pulsering { animation: pulsering 1.4s ease-out infinite; }
+
+@keyframes fadeup {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.fadeup { animation: fadeup .3s cubic-bezier(.2,.7,.3,1) both; }
+
+/* Fluid: let the layout breathe between breakpoints instead of snapping. */
+:root { scroll-behavior: smooth; }
+button, .transition { transition-timing-function: cubic-bezier(.2,.7,.3,1); }

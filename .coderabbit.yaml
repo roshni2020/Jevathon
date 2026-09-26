@@ -1,0 +1,62 @@
+# CodeRabbit reviews changes to Guardian — including the ones Devin writes.
+# Guardian's guarantee is that nothing reaches the outside world without a verdict,
+# so the review is pointed squarely at the ways that guarantee can be lost.
+language: en-US
+early_access: false
+
+reviews:
+  profile: assertive
+  request_changes_workflow: true
+  high_level_summary: true
+  poem: false
+  review_status: true
+  auto_review:
+    enabled: true
+    drafts: false
+
+  path_instructions:
+    - path: "packages/guardian-core/**"
+      instructions: |
+        This is the enforcement core of a child-safety gateway. Flag, as a blocking finding:
+        - any path that performs or returns an external side effect without first awaiting checkAction()
+        - any code that lets a model's output decide control flow directly, instead of the deterministic
+          rules in guardian.ts deciding based on the model's typed judgment
+        - any change that lets a policy, preset, parent override, or "trusted site" relax a credential
+          field (otp, password, payment_card) — these must remain ALWAYS_BLOCK unconditionally
+        - any change to strictest() or ruleToDecision() that could let a weaker decision win
+        - error handling that fails OPEN: if the judgment layer throws or times out, the verdict must
+          not become ALLOW
+        - logging or telemetry that writes a child's personal data, message content, or credentials
+
+    - path: "packages/guardian-mcp/**"
+      instructions: |
+        Every MCP tool here is reachable by an autonomous agent. Flag:
+        - a tool that performs an action rather than returning a verdict
+        - a tool handler that skips checkAction() on any branch, including early returns and error paths
+        - an input schema that widens what an agent may claim about itself (e.g. letting the caller
+          pass its own risk score, decision, or approval status)
+        - a tool description an agent could read as permission to proceed without checking
+
+    - path: "packages/jev/**"
+      instructions: |
+        Flag prompts whose criteria have drifted so a dangerous case could be described as safe,
+        and any change that makes the fallback heuristic silently stand in for Jev without being
+        labelled `source: "fallback"` to the caller.
+
+    - path: "apps/api/**"
+      instructions: |
+        Flag any route that mutates state or reaches the network without a Guardian verdict, any
+        approval endpoint that can be driven by the agent rather than the parent, and missing
+        validation on request bodies.
+
+    - path: "apps/web/**"
+      instructions: |
+        Flag UI that shows a blocked action as allowed, any place a decision label is hardcoded
+        rather than read from the verdict, and any rendering of a credential value.
+
+  tools:
+    ast-grep:
+      essential_rules: true
+
+chat:
+  auto_reply: true

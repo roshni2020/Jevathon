@@ -1,0 +1,26 @@
+{
+  "name": "guardian-mcp",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "api": "tsx apps/api/server.ts",
+    "web": "npm --prefix apps/web run dev",
+    "mcp": "tsx packages/guardian-mcp/server.ts",
+    "dev": "concurrently -n api,web -c cyan,magenta \"npm run api\" \"npm run web\"",
+    "test": "tsx --test tests/*.test.ts"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.0",
+    "@typesafe-ai/sdk": "^0.6.0",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.2",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/node": "^26.6.3",
+    "concurrently": "^9.1.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  }
+}
