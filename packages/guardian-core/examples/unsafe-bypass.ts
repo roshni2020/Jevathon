@@ -6,8 +6,8 @@
  * path that executes before the gateway has spoken. It reads as a harmless
  * optimisation and removes the entire protection for the most dangerous action type.
  *
- * Rename to .ts and open a PR to see CodeRabbit flag it under the
- * `packages/guardian-core/**` path instructions in .coderabbit.yaml.
+ * CodeRabbit should flag `handleActionUnsafe` under the `packages/guardian-core/**`
+ * path instructions in .coderabbit.yaml.
  */
 import type { ProposedAction } from "../types.js";
 
@@ -20,7 +20,7 @@ declare function enforceGuardianDecision(r: { decision: string }): Promise<unkno
 // ---------------------------------------------------------------- WRONG
 // Messages skip the gateway entirely. The OTP scenario executes.
 export async function handleActionUnsafe(action: ProposedAction) {
-  if (action.type === "send_message") {
+  if (action.action_type === "send_message") {
     return execute(action);
   }
   const result = await guardian.checkAction(action);
