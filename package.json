@@ -7,7 +7,9 @@
     "web": "npm --prefix apps/web run dev",
     "mcp": "tsx packages/guardian-mcp/server.ts",
     "dev": "concurrently -n api,web -c cyan,magenta \"npm run api\" \"npm run web\"",
-    "test": "tsx --test tests/*.test.ts"
+    "test": "tsx --test tests/*.test.ts",
+    "build:server": "tsc -p tsconfig.build.json",
+    "vercel-build": "npm run build:server && npm install --prefix apps/web && npm run build --prefix apps/web"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.12.0",

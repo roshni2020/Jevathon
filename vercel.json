@@ -1,5 +1,5 @@
 {
-  "buildCommand": "npm install --prefix apps/web && npm run build --prefix apps/web",
+  "buildCommand": "npm run vercel-build",
   "outputDirectory": "apps/web/dist",
   "rewrites": [{ "source": "/api/(.*)", "destination": "/api" }]
 }
