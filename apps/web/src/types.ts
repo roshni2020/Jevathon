@@ -45,6 +45,9 @@ export interface Approval {
 }
 
 export interface State {
+  parent: { name: string; email: string };
+  connections: Connection[];
+  agents: Record<AgentKind, { name: string; transport: "stdio" | "http"; note: string }>;
   child: { name: string; age: number; policy_preset: string; policy: Policy; trusted_sites: string[] };
   stats: { total: number; allowed: number; approvals: number; blocked: number };
   verdicts: Verdict[];
@@ -66,4 +69,20 @@ export interface StepResult {
   page: { title: string; body: string; from?: string } | null;
   verdict: Verdict;
   executed: { executor: string; detail: string; session_url?: string } | null;
+}
+
+export type AgentKind = "claude" | "chatgpt" | "coderabbit" | "custom";
+
+export interface Connection {
+  connection_id: string;
+  child_id: string;
+  kind: AgentKind;
+  label: string;
+  token: string;
+  created_at: string;
+  last_seen_at: string | null;
+  checks: number;
+  blocked: number;
+  /** Present on /api/connections responses. */
+  config?: string;
 }

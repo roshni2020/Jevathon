@@ -54,7 +54,18 @@ cp .env.example .env        # then paste your TypeSafe key, see below
 npm run dev                 # api on :8787, web on :5173
 ```
 
-Open <http://localhost:5173> → **Agent Playground** → *Marketplace scam* → **Run scenario**.
+Open <http://localhost:5173> and sign in:
+
+```
+parent@guardian.dev / guardian
+```
+
+Then **Agent Playground** → *Marketplace scam* → **Run scenario**.
+
+Parent sign-in uses scrypt password hashing (node:crypto, no dependency) and opaque
+server-side session tokens in an HttpOnly cookie. Every dashboard route requires the
+session; the agent-facing `/api/check` uses a per-child connection token instead, because
+an agent has no business holding a parent's credentials.
 
 Other entry points:
 
@@ -69,8 +80,18 @@ npx tsx packages/devin/demo-loop.ts   # Devin → CodeRabbit → Jev deploy gate
 | Variable | Needed for | Without it |
 | --- | --- | --- |
 | `TYPESAFE_API_KEY` | Jev, both decision paths | Falls back to a regex heuristic, labelled `fallback` in the UI |
-| `BROWSERBASE_API_KEY` + `BROWSERBASE_PROJECT_ID` | Real browser sessions | Uses `MockBrowserExecutor` |
+| `BROWSERBASE_API_KEY` | Real browser sessions (project id is discovered from the key) | Uses `MockBrowserExecutor` |
 | `DEVIN_API_KEY` | Live Devin sessions | `DevinAdapter` returns a recorded result |
+
+## Connecting a real assistant
+
+The **Connections** tab is how a parent points their child's assistant at Guardian. Pick
+Claude, ChatGPT, CodeRabbit or a custom agent and Guardian issues a `gdn_…` connection
+token, then shows the exact config to paste — real config, not an illustration.
+
+The token decides **which child** the calls speak for, so a connected assistant cannot
+claim to be a different child. Revoking it invalidates it immediately. The tab shows each
+connection's live check count, how many actions it stopped, and when it was last active.
 
 ## MCP server
 

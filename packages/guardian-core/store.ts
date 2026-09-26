@@ -129,6 +129,9 @@ function emit(type: string, data: unknown) {
   bus.emit("event", { type, data, at: new Date().toISOString() });
 }
 
+/** Let other modules push a dashboard refresh without importing the bus directly. */
+export const touch = (type: string, data: unknown) => emit(type, data);
+
 /** Demo helper: wipe the timeline between scenario runs. */
 export function reset() {
   verdicts.length = 0;

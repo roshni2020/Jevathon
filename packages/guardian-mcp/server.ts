@@ -9,12 +9,20 @@ import "dotenv/config";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
+import { connectionFromToken, recordUse } from "../guardian-core/connections.js";
 import { checkAction } from "../guardian-core/guardian.js";
 import { ruleToDecision } from "../guardian-core/policy.js";
 import * as store from "../guardian-core/store.js";
 import type { DataField } from "../guardian-core/types.js";
 
 const server = new McpServer({ name: "guardian-mcp", version: "0.1.0" });
+
+/**
+ * The connection token the parent generated when they linked this assistant. It decides
+ * WHICH child the calls speak for, so the agent cannot claim to be a different child.
+ */
+const TOKEN = process.env.GUARDIAN_TOKEN?.trim();
+const childFromToken = (claimed?: string) => connectionFromToken(TOKEN)?.child_id ?? claimed ?? "emma";
 
 const json = (data: unknown) => ({
   content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }],
@@ -49,7 +57,8 @@ server.registerTool(
     },
   },
   async (args) => {
-    const v = await checkAction({ ...args, child_id: args.child_id ?? "emma" });
+    const v = await checkAction({ ...args, child_id: childFromToken(args.child_id) });
+    recordUse(TOKEN, v.decision !== "ALLOW");
     return json({
       decision: v.decision,
       risk: v.risk,
@@ -76,7 +85,7 @@ server.registerTool(
   },
   async ({ child_id, goal, sender, message }) => {
     const v = await checkAction({
-      child_id: child_id ?? "emma",
+      child_id: childFromToken(child_id),
       goal: goal ?? "unspecified",
       action_type: "send_message",
       target: sender,
@@ -109,7 +118,7 @@ server.registerTool(
     },
   },
   async ({ child_id, recipient, fields }) => {
-    const child = store.getChild(child_id ?? "emma");
+    const child = store.getChild(childFromToken(child_id));
     const out = { allowed: [] as DataField[], requires_approval: [] as DataField[], blocked: [] as DataField[] };
     for (const f of fields) {
       const d = ruleToDecision(child.policy.fields[f]);
@@ -137,7 +146,7 @@ server.registerTool(
   async ({ child_id, summary, site, fields, risk }) =>
     json(
       store.createApproval({
-        child_id: child_id ?? "emma",
+        child_id: childFromToken(child_id),
         request_id: `mcp_${Date.now().toString(36)}`,
         summary,
         site,
@@ -162,4 +171,4 @@ server.registerTool(
 );
 
 await server.connect(new StdioServerTransport());
-console.error("guardian-mcp ready on stdio");
+console.error(`guardian-mcp ready on stdio${TOKEN ? ` (connection ${connectionFromToken(TOKEN)?.connection_id ?? "unrecognized token"})` : " (no GUARDIAN_TOKEN, defaulting to demo child)"}`);

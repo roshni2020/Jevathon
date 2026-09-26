@@ -40,15 +40,28 @@ export class BrowserbaseExecutor implements BrowserExecutor {
   private sessionId?: string;
   constructor(
     private apiKey = process.env.BROWSERBASE_API_KEY!,
-    private projectId = process.env.BROWSERBASE_PROJECT_ID!,
+    private projectId = process.env.BROWSERBASE_PROJECT_ID,
   ) {}
+
+  /** Browserbase needs a project id; look it up from the key rather than making the user find it. */
+  private async project(): Promise<string> {
+    if (this.projectId?.trim()) return this.projectId;
+    const res = await fetch("https://api.browserbase.com/v1/projects", {
+      headers: { "X-BB-API-Key": this.apiKey },
+    });
+    if (!res.ok) throw new Error(`browserbase projects ${res.status}: ${await res.text()}`);
+    const projects = (await res.json()) as { id: string }[];
+    if (!projects.length) throw new Error("browserbase: the account has no projects");
+    this.projectId = projects[0].id;
+    return this.projectId;
+  }
 
   private async session(): Promise<string> {
     if (this.sessionId) return this.sessionId;
     const res = await fetch("https://api.browserbase.com/v1/sessions", {
       method: "POST",
       headers: { "X-BB-API-Key": this.apiKey, "Content-Type": "application/json" },
-      body: JSON.stringify({ projectId: this.projectId }),
+      body: JSON.stringify({ projectId: await this.project() }),
     });
     if (!res.ok) throw new Error(`browserbase ${res.status}: ${await res.text()}`);
     const { id } = (await res.json()) as { id: string };
@@ -69,9 +82,8 @@ export class BrowserbaseExecutor implements BrowserExecutor {
 }
 
 export function makeExecutor(): BrowserExecutor {
-  return process.env.BROWSERBASE_API_KEY?.trim() && process.env.BROWSERBASE_PROJECT_ID?.trim()
-    ? new BrowserbaseExecutor()
-    : new MockBrowserExecutor();
+  // The project id is optional: the executor discovers it from the key when absent.
+  return process.env.BROWSERBASE_API_KEY?.trim() ? new BrowserbaseExecutor() : new MockBrowserExecutor();
 }
 
 /** Map a Guardian action onto the browser primitive that would carry it out. */

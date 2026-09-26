@@ -1,15 +1,18 @@
 import { useCallback, useEffect, useState } from "react";
 import About from "./About";
+import Connections from "./Connections";
+import Login from "./Login";
 import Playground from "./Playground";
-import { api } from "./api";
+import { api, call } from "./api";
 import type { Rule, State, Verdict } from "./types";
 import { Button, Card, Chip, DEC, Meter, Reason, Stat, time } from "./ui";
 
-type Tab = "playground" | "dashboard" | "policies" | "incident" | "about";
+type Tab = "playground" | "dashboard" | "connections" | "policies" | "incident" | "about";
 
 const TABS: { id: Tab; label: string }[] = [
   { id: "playground", label: "Agent Playground" },
   { id: "dashboard", label: "Dashboard" },
+  { id: "connections", label: "Connections" },
   { id: "policies", label: "Safety Policies" },
   { id: "incident", label: "Incidents" },
   { id: "about", label: "About" },
@@ -18,18 +21,32 @@ const TABS: { id: Tab; label: string }[] = [
 export default function App() {
   const [tab, setTab] = useState<Tab>("playground");
   const [state, setState] = useState<State | null>(null);
+  /** null while we are still asking the API whether this browser has a session. */
+  const [signedIn, setSignedIn] = useState<boolean | null>(null);
 
   const reload = useCallback(async () => {
-    setState(await (await fetch(api("/api/state"))).json());
+    try {
+      setState(await call<State>("/api/state"));
+      setSignedIn(true);
+    } catch {
+      setSignedIn(false);
+      setState(null);
+    }
   }, []);
 
   useEffect(() => {
     reload();
-    const es = new EventSource(api("/api/events"));
-    es.onmessage = () => reload();
-    return () => es.close();
   }, [reload]);
 
+  useEffect(() => {
+    if (!signedIn) return;
+    const es = new EventSource(api("/api/events"), { withCredentials: true });
+    es.onmessage = () => reload();
+    return () => es.close();
+  }, [signedIn, reload]);
+
+  if (signedIn === null) return <div className="grid h-screen place-items-center text-sm text-slate-400">Loading…</div>;
+  if (!signedIn) return <Login onSignedIn={reload} />;
   if (!state) return <div className="grid h-screen place-items-center text-sm text-slate-400">Loading…</div>;
 
   return (
@@ -53,6 +70,15 @@ export default function App() {
             </div>
           </div>
           <div className="grid h-10 w-10 place-items-center rounded-full bg-violet-100 font-bold text-violet-700">E</div>
+          <button
+            onClick={async () => {
+              await call("/api/logout", { method: "POST" });
+              setSignedIn(false);
+            }}
+            className="rounded-xl px-3 py-2 text-[12.5px] font-semibold text-slate-500 ring-1 ring-slate-200 transition hover:bg-slate-50"
+          >
+            Sign out
+          </button>
         </div>
       </header>
 
@@ -78,6 +104,7 @@ export default function App() {
       <div key={tab} className="fadeup">
       {tab === "playground" && <Playground state={state} reload={reload} />}
       {tab === "dashboard" && <Dashboard state={state} />}
+      {tab === "connections" && <Connections state={state} reload={reload} />}
       {tab === "policies" && <Policies state={state} />}
       {tab === "incident" && <Incidents state={state} />}
       {tab === "about" && <About state={state} />}
@@ -90,6 +117,7 @@ export default function App() {
         <span>
           Browser: <b className="text-slate-600">{state.browser}</b>
         </span>
+        <span>Signed in as {state.parent.name}</span>
         <span>Policy: {state.child.policy_preset}</span>
         <span className="ml-auto">TypeSafe AI · CodeRabbit · Cognition · Browserbase</span>
       </footer>
@@ -101,11 +129,7 @@ function Dashboard({ state }: { state: State }) {
   const pending = state.approvals.filter((a) => a.status === "PENDING");
 
   async function resolve(id: string, verb: "approve" | "deny", remember = false) {
-    await fetch(api(`/api/approvals/${id}/${verb}`), {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ remember }),
-    });
+    await call(`/api/approvals/${id}/${verb}`, { method: "POST", body: JSON.stringify({ remember }) });
   }
 
   return (
@@ -191,7 +215,7 @@ const RULES: Rule[] = ["ALLOW", "ASK", "BLOCK"];
 
 function Policies({ state }: { state: State }) {
   const set = (body: object) =>
-    fetch(api("/api/policy"), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    call("/api/policy", { method: "POST", body: JSON.stringify(body) });
 
   const row = (key: string, label: string, rule: Rule, kind: "field" | "action") => {
     const locked = rule === "ALWAYS_BLOCK";

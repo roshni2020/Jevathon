@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { api } from "./api";
+import { api, call } from "./api";
 import type { State, StepResult } from "./types";
 import { Button, Card, Chip, DEC, Meter, Reason } from "./ui";
 
@@ -22,9 +22,9 @@ export default function Playground({ state, reload }: { state: State; reload: ()
     setRunning(true);
     setSteps([]);
     setIncident(null);
-    await fetch(api("/api/reset"), { method: "POST" });
+    await fetch(api("/api/reset"), { method: "POST", credentials: "include" });
     for (let i = 0; i < scenario.step_count; i++) {
-      const res: StepResult = await (await fetch(api(`/api/scenario/${id}/step/${i}`), { method: "POST" })).json();
+      const res: StepResult = await (await fetch(api(`/api/scenario/${id}/step/${i}`), { method: "POST", credentials: "include" })).json();
       setSteps((s) => [...s, res]);
       if (res.verdict.decision === "BLOCK" || res.verdict.decision === "ESCALATE") {
         setIncident(res);
