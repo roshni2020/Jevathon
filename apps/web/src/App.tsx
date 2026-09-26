@@ -11,12 +11,13 @@ import { Button, Card, Chip, DEC, Meter, Reason, Stat, time } from "./ui";
 type Tab = "playground" | "tryit" | "dashboard" | "connections" | "policies" | "incident" | "about";
 
 const TABS: { id: Tab; label: string }[] = [
-  { id: "playground", label: "Agent Playground" },
+  // Left to right is the demo order: watch it work, try it yourself, see what a parent sees.
+  { id: "playground", label: "Playground" },
   { id: "tryit", label: "Check an Action" },
   { id: "dashboard", label: "Dashboard" },
-  { id: "connections", label: "Connections" },
-  { id: "policies", label: "Safety Policies" },
   { id: "incident", label: "Incidents" },
+  { id: "policies", label: "Policies" },
+  { id: "connections", label: "Connections" },
   { id: "about", label: "About" },
 ];
 
@@ -84,12 +85,12 @@ export default function App() {
         </div>
       </header>
 
-      <nav className="mb-6 flex gap-1 rounded-xl bg-white p-1 ring-1 ring-slate-200 md:inline-flex">
+      <nav className="mb-6 flex gap-1 overflow-x-auto rounded-xl bg-white p-1 ring-1 ring-slate-200 md:inline-flex">
         {TABS.map((t) => (
           <button
             key={t.id}
             onClick={() => setTab(t.id)}
-            className={`rounded-lg px-4 py-2 text-[13px] font-semibold transition ${
+            className={`shrink-0 rounded-lg px-3.5 py-2 text-[13px] font-semibold transition ${
               tab === t.id ? "bg-slate-900 text-white" : "text-slate-600 hover:bg-slate-50"
             }`}
           >
