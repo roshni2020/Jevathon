@@ -70,7 +70,7 @@ an agent has no business holding a parent's credentials.
 Other entry points:
 
 ```bash
-npm test                              # 13 safety tests, no API key needed
+npm test                              # 28 tests, no API key needed
 npm run mcp                           # guardian-mcp on stdio
 npx tsx packages/devin/demo-loop.ts   # Devin → CodeRabbit → Jev deploy gate
 ```
@@ -172,21 +172,21 @@ removes the protection entirely.
 ```text
 apps/web                 React + TypeScript + Vite + Tailwind dashboard and playground
 apps/api                 Express, SSE event stream
-packages/guardian-core   action schema, policy, enforcement, store, scenarios
+packages/guardian-core   action schema, policy, enforcement, auth, connections, store
 packages/guardian-mcp    the MCP server
 packages/jev             Jev questions and the typed judgment
 packages/browser         BrowserExecutor interface, Browserbase + mock
 packages/devin           DevinAdapter, CodeRabbit findings → Jev deploy gate
-tests                    safety tests that pass without an API key
+tests                    28 tests: safety guarantees, auth, and token boundaries
 ```
 
 ## Hackathon scope
 
 Built for the Jevathon (TypeSafe AI × AI Collective), 26 September 2026.
 
-Deliberately out of scope: authentication, real parental identity verification, payment
-processing, real child accounts, and durable storage — state is in process memory, and
-`store.ts` says where SQLite would go.
+Deliberately out of scope: signup and account recovery (one seeded parent), real parental
+identity verification, payment processing, and durable storage — state is in process
+memory, and `store.ts` says where SQLite would go. Sign-in itself is real.
 
 Clearly mocked, and labelled as such in the UI and in code: `MockBrowserExecutor` (unless
 Browserbase credentials are present), `DevinAdapter.run()` (unless `DEVIN_API_KEY` is
