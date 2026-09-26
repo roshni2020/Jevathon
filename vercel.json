@@ -1,5 +1,7 @@
 {
-  "buildCommand": "npm run vercel-build",
+  "buildCommand": "npx tsc -p tsconfig.build.json && npm install --prefix apps/web && npm run build --prefix apps/web",
+  "installCommand": "npm install",
   "outputDirectory": "apps/web/dist",
+  "framework": null,
   "rewrites": [{ "source": "/api/(.*)", "destination": "/api" }]
 }
