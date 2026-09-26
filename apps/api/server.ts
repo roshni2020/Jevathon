@@ -273,8 +273,11 @@ if (existsSync(WEB_DIST)) {
   console.log("serving built frontend from apps/web/dist");
 }
 
+export default app;
+
 const port = Number(process.env.PORT ?? 8787);
-app.listen(port, () => {
+// Only bind a port when run directly. On Vercel the app is imported as a handler.
+if (!process.env.VERCEL) app.listen(port, () => {
   console.log(`guardian api  http://localhost:${port}`);
   console.log(`jev: ${jevConfigured() ? "LIVE (TYPESAFE_API_KEY set)" : "FALLBACK heuristic — set TYPESAFE_API_KEY"}`);
   console.log(`browser executor: ${executor.name}`);

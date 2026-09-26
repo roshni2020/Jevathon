@@ -102,6 +102,21 @@ Without Docker, the same single-origin mode works locally — `npm run build --p
 then `npm run api`, and the dashboard is on <http://localhost:8787>. `npm run dev` keeps
 Vite on :5173 for hot reload while developing.
 
+### Deploying
+
+`vercel.json` and `api/index.ts` deploy the same Express app as a serverless function with
+the dashboard as static assets. Set `TYPESAFE_API_KEY` (and optionally
+`BROWSERBASE_API_KEY`) in the project's environment variables, or the API answers with
+`jev: "fallback"` and the UI says so.
+
+Two caveats are inherent to serverless, not bugs: Guardian keeps sessions, verdicts and
+connections in process memory, so a cold start loses them and two instances do not share
+them; and SSE cannot hold a connection, so the dashboard falls back to polling every three
+seconds. Both disappear once `store.ts` is backed by Postgres.
+
+Docker is the deployment that behaves exactly like local, because it is one long-lived
+process.
+
 ### Environment
 
 | Variable | Needed for | Without it |

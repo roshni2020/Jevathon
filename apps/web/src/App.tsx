@@ -43,9 +43,18 @@ export default function App() {
 
   useEffect(() => {
     if (!signedIn) return;
+    // SSE where the server can hold a connection; polling where it cannot (serverless).
     const es = new EventSource(api("/api/events"), { withCredentials: true });
     es.onmessage = () => reload();
-    return () => es.close();
+    let poll: ReturnType<typeof setInterval> | undefined;
+    es.onerror = () => {
+      es.close();
+      poll ??= setInterval(reload, 3000);
+    };
+    return () => {
+      es.close();
+      if (poll) clearInterval(poll);
+    };
   }, [signedIn, reload]);
 
   if (signedIn === null) return <div className="grid h-screen place-items-center text-sm text-slate-400">Loading…</div>;
